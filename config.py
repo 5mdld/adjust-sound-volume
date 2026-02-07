@@ -1,33 +1,10 @@
-# Anki 2.1.x add-on to adjust the sound volume
-# Copyright (C) 2021  Muneyuki Noguchi
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-Handle the volume configurations
-"""
-from dataclasses import dataclass
-from dataclasses import field
-from typing import Any
-from typing import Dict
-from typing import Type
-
+from dataclasses import dataclass, field
 from aqt import mw
-
+from aqt.utils import showWarning
 
 @dataclass
 class LoudnormConfig:
-    """The loudnorm filter configuration"""
+    """Configuration for the loudnorm filter"""
     enabled: bool = False
     i: int = -24
     dual_mono: bool = False
@@ -35,48 +12,85 @@ class LoudnormConfig:
 
 @dataclass
 class VolumeConfig:
-    """The volume configuration"""
+    """Main volume configuration"""
     volume: int = 100
+    is_muted: bool = False
+    allow_volume_boost: bool = False
+    mute_shortcut: str = ""
+    settings_shortcut: str = ""
+    volume_up_shortcut: str = ""
+    volume_down_shortcut: str = ""
     loudnorm: LoudnormConfig = field(default_factory=LoudnormConfig)
-
-
-def _load_value(config: Dict[str, Any], key: str, type_: Type) -> Any:
-    if key in config and isinstance(config[key], type_):
-        return config[key]
-
-    return None
+    playback_speed: float = 1.0
+    speed_up_shortcut: str = ""
+    speed_down_shortcut: str = ""
 
 
 def load_config() -> VolumeConfig:
-    """Load the sound volume configuration."""
+    """Load the sound volume configuration from Anki's configuration system"""
     volume_config = VolumeConfig()
+    
+    try:
+        # Get addon config from Anki
+        addon_config = mw.addonManager.getConfig(__name__)
+        
+        if not isinstance(addon_config, dict):
+            showWarning("Invalid configuration format. Resetting to defaults.")
+            return volume_config
+        
+        # If config exists, load it
+        if addon_config:
+            # Load configuration with type checking
+            volume_config.volume = int(addon_config.get('volume', 100))
+            volume_config.is_muted = bool(addon_config.get('is_muted', False))
+            volume_config.allow_volume_boost = bool(addon_config.get('allow_volume_boost', False))
+            volume_config.playback_speed = float(addon_config.get('playback_speed', 1.0))
+            
+            # Load shortcuts
+            for shortcut_name in ['mute_shortcut', 'settings_shortcut', 
+                                'volume_up_shortcut', 'volume_down_shortcut',
+                                'speed_up_shortcut', 'speed_down_shortcut']:
+                value = addon_config.get(shortcut_name, "")
+                setattr(volume_config, shortcut_name, str(value) if value else "")
 
-    if mw is None:
-        return volume_config
-
-    config = mw.addonManager.getConfig(__name__)
-    if config is None:
-        return volume_config
-
-    value = _load_value(config, 'volume', int)
-    if value is not None:
-        volume_config.volume = value
-
-    if 'loudnorm' not in config:
-        return volume_config
-
-    loudnorm_config = config['loudnorm']
-
-    value = _load_value(loudnorm_config, 'enabled', bool)
-    if value is not None:
-        volume_config.loudnorm.enabled = value
-
-    value = _load_value(loudnorm_config, 'i', int)
-    if value is not None:
-        volume_config.loudnorm.i = value
-
-    value = _load_value(loudnorm_config, 'dual_mono', bool)
-    if value is not None:
-        volume_config.loudnorm.dual_mono = value
-
+            # Load loudnorm settings
+            loudnorm = addon_config.get('loudnorm', {})
+            if isinstance(loudnorm, dict):
+                volume_config.loudnorm.enabled = bool(loudnorm.get('enabled', False))
+                volume_config.loudnorm.i = int(loudnorm.get('i', -24))
+                volume_config.loudnorm.dual_mono = bool(loudnorm.get('dual_mono', False))
+                
+    except Exception as e:
+        showWarning(f"Error loading configuration: {str(e)}\nResetting to defaults.")
+        
     return volume_config
+
+
+def save_config(volume_config: VolumeConfig) -> None:
+    """Save configuration using Anki's configuration system"""
+    if not isinstance(volume_config, VolumeConfig):
+        showWarning("Invalid configuration object")
+        return
+
+    config = {
+        'volume': volume_config.volume,
+        'is_muted': volume_config.is_muted,
+        'allow_volume_boost': volume_config.allow_volume_boost,
+        'mute_shortcut': volume_config.mute_shortcut,
+        'settings_shortcut': volume_config.settings_shortcut,
+        'volume_up_shortcut': volume_config.volume_up_shortcut,
+        'volume_down_shortcut': volume_config.volume_down_shortcut,
+        'speed_up_shortcut': volume_config.speed_up_shortcut,
+        'speed_down_shortcut': volume_config.speed_down_shortcut,
+        'playback_speed': volume_config.playback_speed,
+        'loudnorm': {
+            'enabled': volume_config.loudnorm.enabled,
+            'i': volume_config.loudnorm.i,
+            'dual_mono': volume_config.loudnorm.dual_mono
+        }
+    }
+    
+    try:
+        mw.addonManager.writeConfig(__name__, config)
+    except Exception as e:
+        showWarning(f"Failed to save volume settings: {str(e)}")

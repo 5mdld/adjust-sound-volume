@@ -15,33 +15,43 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 Defines the hook to set the sound volume.
+Original by Muneyuki Noguchi
+Modified by egg rolls
 """
 
-from typing import Any
+from typing import Optional
 
 from aqt.sound import MpvManager
-from aqt.sound import SimpleMplayerSlaveModePlayer
-
 from anki.sound import AVTag
 
 from . import config
 
+def did_begin_playing(player: MpvManager, tag: Optional[AVTag] = None) -> None:
+    """Set the sound volume for mpv player."""
+    try:
+        if player is None or not isinstance(player, MpvManager):
+            return
 
-def did_begin_playing(player: Any, _: AVTag) -> None:
-    """Set the sound volume."""
-    volume_config = config.load_config()
-    if isinstance(player, SimpleMplayerSlaveModePlayer):
-        player.command('volume', volume_config.volume, '1')
-    elif isinstance(player, MpvManager):
-        player.set_property('volume', volume_config.volume)
+        volume_config = config.load_config()
+        actual_volume = 0 if volume_config.is_muted else volume_config.volume
+        
+        # Set volume
+        player.set_property('volume', actual_volume)
+        
+        if volume_config.is_muted or actual_volume == 0:
+            player.set_property('af', '')
+            return
 
-        # How can we retrieve the current value of the af property?
-        # "player.get_property('af')" always returns "[]"
+        # Configure audio filter for loudnorm
         if volume_config.loudnorm.enabled:
             i = volume_config.loudnorm.i
-            # True => true, False => false
             dual_mono = str(volume_config.loudnorm.dual_mono).lower()
-            loudnorm_value = f'loudnorm=I={i}:dual_mono={dual_mono}'
+            player.set_property('af', f'loudnorm=I={i}:dual_mono={dual_mono}')
         else:
-            loudnorm_value = ''
-        player.set_property('af', loudnorm_value)
+            player.set_property('af', '')
+        
+        # Set playback speed
+        player.set_property('speed', volume_config.playback_speed)
+                
+    except Exception as e:
+        print(f"Sound volume control error: {str(e)}")

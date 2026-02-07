@@ -1,1 +1,17 @@
-{"volume": 100}
+{
+  "volume": 100,
+  "is_muted": false,
+  "allow_volume_boost": false,
+  "mute_shortcut": "Ctrl+Alt+M",
+  "settings_shortcut": "Ctrl+Alt+V",
+  "volume_up_shortcut": "Ctrl+Alt+Up",
+  "volume_down_shortcut": "Ctrl+Alt+Down",
+  "speed_up_shortcut": "Ctrl+Alt+Right",
+  "speed_down_shortcut": "Ctrl+Alt+Left",
+  "playback_speed": 1.0,
+  "loudnorm": {
+    "enabled": false,
+    "i": -24,
+    "dual_mono": false
+  }
+}
