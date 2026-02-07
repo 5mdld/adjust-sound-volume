@@ -9,7 +9,7 @@ This add-on enhances the original [Adjust Sound Volume](https://ankiweb.net/shar
 
 ## How to Install
 
-You can install this add-on through [AnkiWeb]().
+You can install this add-on through [AnkiWeb](https://ankiweb.net/shared/info/537351762).
 
 You can also download the source code on my [GitHub](https://github.com/5mdld/adjust-sound-volume) and use the `make` command to package it.
 
