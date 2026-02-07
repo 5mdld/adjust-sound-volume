@@ -13,7 +13,7 @@ You can install this add-on through [AnkiWeb]().
 
 You can also download the source code on my [GitHub](https://github.com/5mdld/anki-adjust-sound-volume) and use the `make` command to package it.
 
-![Screenshot](https://pub-90b0b2afa26447b8b824c3d05d8e274f.r2.dev/uPic/20241130OIsEr5.png)
+![Screenshot](https://pub-90b0b2afa26447b8b824c3d05d8e274f.r2.dev/uPic/20260207JUj5Zj.png)
 
 ## Original Features
 
